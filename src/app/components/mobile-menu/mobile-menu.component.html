@@ -1,0 +1,35 @@
+<div class="p-4 bg-white rounded-t-xl">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-amber-800">Menu</h2>
+    <button (click)="closeMenu()" class="text-gray-500 hover:text-gray-800">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+
+  <nav class="flex flex-col gap-4">
+    <a routerLink="/" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" [routerLinkActiveOptions]="{exact: true}" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Home</a>
+    <a routerLink="/menu" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Menu</a>
+    <a routerLink="/contact" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Contact</a>
+
+    <!-- Admin Link -->
+    <a *ngIf="showAdminLink()" routerLink="/admin" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Admin</a>
+
+    <!-- Divider -->
+    <div class="border-t border-gray-200 my-2"></div>
+
+    <!-- Auth Links -->
+    <ng-container *ngIf="currentUser$ | async as user; else notLoggedIn">
+      <div class="px-4 py-2 text-sm text-gray-500">
+        Signed in as <span class="font-bold text-gray-800">{{ user.username }}</span>
+      </div>
+      <a href="#" (click)="logout($event)" class="block px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition font-medium">Logout</a>
+    </ng-container>
+
+    <ng-template #notLoggedIn>
+      <a routerLink="/login" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Login</a>
+      <a routerLink="/register" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Register</a>
+    </ng-template>
+  </nav>
+</div>
