@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './home/home.component';
 import { MenuComponent } from './menu/menu.component';
 import { CartComponent } from './cart/cart.component';
 import { LoginComponent } from './components/login/login.component';
@@ -10,7 +9,7 @@ import { OrderHistoryComponent } from './components/order-history/order-history.
 import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent },
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'menu', component: MenuComponent },
   { path: 'cart', component: CartComponent },
   { path: 'login', component: LoginComponent },
