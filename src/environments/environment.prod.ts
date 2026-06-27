@@ -1,5 +1,5 @@
 export const environment = {
     production: true,
-    apiUrl: 'https://YOUR-RAILWAY-API-URL/api',
+    apiUrl: 'https://cafeapi-production-c19a.up.railway.app/api',
     adminEmail: 'admin@gmail.com'
 };
