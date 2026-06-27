@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { MatBottomSheet, MatBottomSheetModule } from '@angular/material/bottom-sheet';
 import { CartService } from './services/cart.service';
 import { AuthService } from './services/auth.service';
+import { TelegramMiniAppService } from './services/telegram-mini-app.service';
 import { Observable } from 'rxjs';
 import { User } from './models/user.model';
 import { MobileMenuComponent } from './components/mobile-menu/mobile-menu.component';
@@ -23,13 +24,16 @@ export class AppComponent implements OnInit {
   constructor(
     private cartService: CartService,
     private authService: AuthService,
-    private bottomSheet: MatBottomSheet
+    private bottomSheet: MatBottomSheet,
+    private telegramMiniAppService: TelegramMiniAppService
   ) {
     this.cartCount$ = this.cartService.getCartCount();
     this.currentUser$ = this.authService.currentUser$;
   }
 
   ngOnInit(): void {
+    this.telegramMiniAppService.initialize();
+
     // Force re-check of auth state after client hydration
     // This ensures the UI updates with localStorage data
     if (this.authService.isLoggedIn() && !this.authService.currentUserValue) {
@@ -43,10 +47,12 @@ export class AppComponent implements OnInit {
   }
 
   logout(): void {
+    this.telegramMiniAppService.notify('warning');
     this.authService.logout();
   }
 
   openMobileMenu(): void {
+    this.telegramMiniAppService.selectionChanged();
     this.bottomSheet.open(MobileMenuComponent);
   }
 }

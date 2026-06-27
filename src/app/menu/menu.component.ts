@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { Drink, CartItem } from '../models/drink.model';
 import { CartService } from '../services/cart.service';
+import { TelegramMiniAppService } from '../services/telegram-mini-app.service';
 import { environment } from '../../environments/environment';
 
 @Component({
@@ -37,7 +38,8 @@ export class MenuComponent implements OnInit {
   constructor(
     private cartService: CartService,
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private telegramMiniAppService: TelegramMiniAppService
   ) {
     this.cartItems$ = this.cartService.getCartItems();
     this.cartTotal$ = this.cartService.getCartTotal();
@@ -92,6 +94,7 @@ export class MenuComponent implements OnInit {
 
   addToCart(drink: Drink) {
     this.cartService.addToCart(drink, 1);
+    this.telegramMiniAppService.impact('light');
   }
 
   openItemDiscountModal(): void {
@@ -104,6 +107,7 @@ export class MenuComponent implements OnInit {
     this.selectedDiscountItemNames = [];
     this.discountUnit = 'percentage';
     this.discountValue = '';
+    this.telegramMiniAppService.selectionChanged();
   }
 
   closeItemDiscountModal(): void {
@@ -114,14 +118,17 @@ export class MenuComponent implements OnInit {
   toggleDiscountItem(itemName: string): void {
     if (this.selectedDiscountItemNames.includes(itemName)) {
       this.selectedDiscountItemNames = this.selectedDiscountItemNames.filter(name => name !== itemName);
+      this.telegramMiniAppService.selectionChanged();
       return;
     }
 
     this.selectedDiscountItemNames = [...this.selectedDiscountItemNames, itemName];
+    this.telegramMiniAppService.selectionChanged();
   }
 
   setDiscountUnit(unit: 'percentage' | 'fixed'): void {
     this.discountUnit = unit;
+    this.telegramMiniAppService.selectionChanged();
   }
 
   onDiscountValueChange(event: Event): void {
@@ -162,6 +169,7 @@ export class MenuComponent implements OnInit {
       this.roundCurrency(parsedValue)
     );
 
+    this.telegramMiniAppService.notify('success');
     this.closeItemDiscountModal();
   }
 
@@ -172,6 +180,7 @@ export class MenuComponent implements OnInit {
     }
 
     this.cartService.clearDiscountFromItems(this.selectedDiscountItemNames);
+    this.telegramMiniAppService.notify('warning');
     this.closeItemDiscountModal();
   }
 
@@ -221,9 +230,11 @@ export class MenuComponent implements OnInit {
 
   clearCart(): void {
     this.cartService.clearCart();
+    this.telegramMiniAppService.notify('warning');
   }
 
   checkout(): void {
+    this.telegramMiniAppService.impact('medium');
     this.router.navigate(['/cart']);
   }
 }

@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CartService } from '../services/cart.service';
 import { OrderService } from '../services/order.service';
 import { AuthService } from '../services/auth.service';
+import { TelegramMiniAppService } from '../services/telegram-mini-app.service';
 import { CartItem } from '../models/drink.model';
 import { Observable, take } from 'rxjs';
 
@@ -33,7 +34,8 @@ export class CartComponent implements OnInit {
         private readonly cartService: CartService,
         private readonly orderService: OrderService,
         private readonly authService: AuthService,
-        private readonly router: Router
+        private readonly router: Router,
+        private readonly telegramMiniAppService: TelegramMiniAppService
     ) { }
 
     ngOnInit() {
@@ -47,24 +49,28 @@ export class CartComponent implements OnInit {
 
     increaseQuantity(drinkName: string, currentQuantity: number) {
         this.cartService.updateQuantity(drinkName, currentQuantity + 1);
+        this.telegramMiniAppService.selectionChanged();
     }
 
     decreaseQuantity(drinkName: string, currentQuantity: number) {
         if (currentQuantity > 1) {
             this.cartService.updateQuantity(drinkName, currentQuantity - 1);
+            this.telegramMiniAppService.selectionChanged();
         }
     }
 
     removeItem(drinkName: string) {
         if (confirm(`Remove ${drinkName} from cart?`)) {
             this.cartService.removeFromCart(drinkName);
+            this.telegramMiniAppService.notify('warning');
         }
     }
 
     clearCart() {
         if (confirm('Are you sure you want to clear your entire cart?')) {
             this.cartService.clearCart();
-            this.clearDiscount();
+            this.clearDiscount(true);
+            this.telegramMiniAppService.notify('warning');
         }
     }
 
@@ -73,6 +79,7 @@ export class CartComponent implements OnInit {
         this.discountUnit = this.appliedDiscountType || 'percent';
         this.discountDraftValue = this.appliedDiscountValue > 0 ? String(this.appliedDiscountValue) : '';
         this.checkoutError = '';
+        this.telegramMiniAppService.selectionChanged();
     }
 
     closeDiscountModal() {
@@ -81,6 +88,7 @@ export class CartComponent implements OnInit {
 
     setDiscountUnit(unit: 'percent' | 'amount') {
         this.discountUnit = unit;
+        this.telegramMiniAppService.selectionChanged();
     }
 
     onDiscountInput(event: Event) {
@@ -109,14 +117,18 @@ export class CartComponent implements OnInit {
         this.appliedDiscountType = this.discountUnit;
         this.appliedDiscountValue = this.roundCurrency(rawValue);
         this.checkoutError = '';
+        this.telegramMiniAppService.notify('success');
         this.closeDiscountModal();
     }
 
-    clearDiscount() {
+    clearDiscount(silent = false) {
         this.appliedDiscountType = null;
         this.appliedDiscountValue = 0;
         this.discountDraftValue = '';
         this.discountUnit = 'percent';
+        if (!silent) {
+            this.telegramMiniAppService.notify('warning');
+        }
     }
 
     hasDiscount(): boolean {
@@ -176,6 +188,7 @@ export class CartComponent implements OnInit {
     checkout() {
         this.isCheckingOut = true;
         this.checkoutError = '';
+        this.telegramMiniAppService.impact('medium');
 
         this.cartItems$.pipe(take(1)).subscribe(items => {
             this.cartTotal$.pipe(take(1)).subscribe(subtotal => {
@@ -204,12 +217,14 @@ export class CartComponent implements OnInit {
                         this.placedInvoice = res.order.invoice_number;
                         this.orderPlaced = true;
                         this.isCheckingOut = false;
-                        this.clearDiscount();
+                        this.telegramMiniAppService.notify('success');
+                        this.clearDiscount(true);
                         this.cartService.clearCart();
                     },
                     error: (err) => {
                         this.checkoutError = err.message || 'Failed to place order. Please try again.';
                         this.isCheckingOut = false;
+                        this.telegramMiniAppService.notify('error');
                     }
                 });
             });
@@ -218,6 +233,7 @@ export class CartComponent implements OnInit {
 
     continueShopping() {
         this.orderPlaced = false;
+        this.telegramMiniAppService.selectionChanged();
         this.router.navigate(['/menu']);
     }
 }
