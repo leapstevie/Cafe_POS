@@ -8,11 +8,11 @@
     <div class="hidden md:flex items-center gap-6">
       <nav>
         <ul class="flex space-x-6 items-center">
-          <li><a routerLink="/" routerLinkActive="text-amber-600 font-semibold"
+          <li *ngIf="currentUser$ | async"><a routerLink="/menu" routerLinkActive="text-amber-600 font-semibold"
               [routerLinkActiveOptions]="{exact: true}" class="text-gray-600 hover:text-amber-800 transition">Home</a>
           </li>
           
-          <li><a routerLink="/menu" routerLinkActive="text-amber-600 font-semibold"
+          <li *ngIf="currentUser$ | async"><a routerLink="/menu" routerLinkActive="text-amber-600 font-semibold"
               class="text-gray-600 hover:text-amber-800 transition">Menu</a></li>
 
           <!-- <li><a routerLink="/contact" routerLinkActive="text-amber-600 font-semibold"
@@ -29,10 +29,6 @@
             <a routerLink="/login" routerLinkActive="text-amber-600 font-semibold"
               class="text-gray-600 hover:text-amber-800 transition">Login</a>
           </li>
-          <!-- <li *ngIf="!(currentUser$ | async)">
-            <a routerLink="/register" routerLinkActive="text-amber-600 font-semibold"
-              class="text-gray-600 hover:text-amber-800 transition">Register</a>
-          </li> -->
         </ul>
       </nav>
 

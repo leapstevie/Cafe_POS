@@ -9,12 +9,12 @@
   </div>
 
   <nav class="flex flex-col gap-4">
-    <a routerLink="/" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" [routerLinkActiveOptions]="{exact: true}" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Home</a>
-    <a routerLink="/menu" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Menu</a>
-    <a routerLink="/contact" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Contact</a>
+    <a *ngIf="currentUser$ | async" routerLink="/menu" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" [routerLinkActiveOptions]="{exact: true}" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Home</a>
+    <a *ngIf="currentUser$ | async" routerLink="/menu" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Menu</a>
 
     <!-- Admin Link -->
     <a *ngIf="showAdminLink()" routerLink="/admin" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Admin</a>
+    <a *ngIf="showAdminLink()" routerLink="/register" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Create User</a>
 
     <!-- Divider -->
     <div class="border-t border-gray-200 my-2"></div>
@@ -29,7 +29,6 @@
 
     <ng-template #notLoggedIn>
       <a routerLink="/login" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Login</a>
-      <!-- <a routerLink="/register" (click)="closeMenu()" routerLinkActive="text-amber-600 font-semibold bg-amber-50" class="block px-4 py-3 rounded-lg text-gray-700 hover:bg-amber-50 transition">Register</a> -->
     </ng-template>
   </nav>
 </div>

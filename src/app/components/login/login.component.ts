@@ -1,17 +1,21 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
 export class LoginComponent {
+  readonly testerAccounts = [
+    { label: 'Admin Tester', email: 'admin@gmail.com', password: 'admin123' },
+    { label: 'Cashier Tester', email: 'cashier1@gmail.com', password: 'cashier123' }
+  ];
   loginForm: FormGroup;
   isLoading = false;
   errorMessage = '';
@@ -22,9 +26,13 @@ export class LoginComponent {
     private router: Router
   ) {
     this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      email: ['cashier1@gmail.com', [Validators.required, Validators.email]],
+      password: ['cashier123', [Validators.required, Validators.minLength(6)]]
     });
+  }
+
+  fillTesterAccount(email: string, password: string): void {
+    this.loginForm.patchValue({ email, password });
   }
 
   onSubmit(): void {
@@ -48,11 +56,11 @@ export class LoginComponent {
     });
   }
 
-  get email() {
-    return this.loginForm.get('email');
+  get emailControl() {
+    return this.loginForm.controls['email'];
   }
 
-  get password() {
-    return this.loginForm.get('password');
+  get passwordControl() {
+    return this.loginForm.controls['password'];
   }
 }

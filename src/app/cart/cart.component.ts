@@ -225,7 +225,7 @@ export class CartComponent implements OnInit {
             this.cartTotal$.pipe(take(1)).subscribe(subtotal => {
                 const discountAmount = this.getAppliedDiscount(subtotal);
                 const total = this.getFinalTotal(subtotal);
-                const cashierName = this.authService.currentUserValue?.username || 'Guest';
+                const cashierName = this.authService.currentUserValue?.username || 'Cashier';
                 const payload = {
                     subtotal: +subtotal.toFixed(2),
                     total: +total.toFixed(2),

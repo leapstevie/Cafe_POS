@@ -28,15 +28,12 @@ export class AuthService {
         this.isBrowser = isPlatformBrowser(this.platformId);
     }
 
-    /**
-     * Register new user
-     */
-    register(data: RegisterRequest): Observable<AuthResponse> {
-        return this.http.post<AuthResponse>(`${this.API_URL}/auth/register`, data)
-            .pipe(
-                tap(response => this.handleAuthSuccess(response)),
-                catchError(this.handleError)
-            );
+    createUser(data: RegisterRequest): Observable<User> {
+        return this.http.post<User>(`${this.API_URL}/auth/register`, data, {
+            headers: this.getAuthHeaders()
+        }).pipe(
+            catchError(this.handleError)
+        );
     }
 
     /**

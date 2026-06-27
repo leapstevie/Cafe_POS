@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -15,11 +15,11 @@ export class RegisterComponent {
   registerForm: FormGroup;
   isLoading = false;
   errorMessage = '';
+  successMessage = '';
 
   constructor(
     private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router
+    private authService: AuthService
   ) {
     this.registerForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3)]],
@@ -37,10 +37,11 @@ export class RegisterComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.authService.register(this.registerForm.value).subscribe({
-      next: (response) => {
-        console.log('Registration successful:', response);
-        this.router.navigate(['/menu']);
+    this.authService.createUser(this.registerForm.value).subscribe({
+      next: () => {
+        this.successMessage = 'User account created successfully.';
+        this.isLoading = false;
+        this.registerForm.reset();
       },
       error: (error) => {
         this.errorMessage = error.message || 'Registration failed. Please try again.';
@@ -50,14 +51,14 @@ export class RegisterComponent {
   }
 
   get username() {
-    return this.registerForm.get('username');
+    return this.registerForm.controls['username'];
   }
 
   get email() {
-    return this.registerForm.get('email');
+    return this.registerForm.controls['email'];
   }
 
   get password() {
-    return this.registerForm.get('password');
+    return this.registerForm.controls['password'];
   }
 }
