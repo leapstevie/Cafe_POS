@@ -17,6 +17,19 @@
         </div>
       </div>
 
+      <div class="mb-4 flex justify-end">
+        <button
+          type="button"
+          (click)="openItemDiscountModal()"
+          [disabled]="currentCartItems.length === 0"
+          class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-2.21 0-4 .895-4 2s1.79 2 4 2 4 .895 4 2-1.79 2-4 2m0-10V5m0 14v-2" />
+          </svg>
+          Discount Items
+        </button>
+      </div>
+
       <!-- Category Filter -->
       <div class="flex overflow-x-auto pb-2 gap-2 hide-scrollbar">
         <button *ngFor="let cat of categories" (click)="setCategory(cat)" 
@@ -108,9 +121,17 @@
               <div class="pr-2">
                 <h4 class="font-bold text-gray-800 leading-tight text-sm line-clamp-2">{{ item.drink.name }}</h4>
                 <p class="text-xs text-gray-500 mt-0.5">${{ (+item.drink.price).toFixed(2) }}</p>
+                <p *ngIf="hasItemDiscount(item)" class="mt-1 text-[11px] font-semibold text-red-500">
+                  {{ getItemDiscountLabel(item) }}
+                </p>
               </div>
-              <div class="font-bold text-amber-700 text-sm">
+              <div class="text-right">
+                <p *ngIf="hasItemDiscount(item)" class="text-[11px] text-gray-400 line-through">
+                  ${{ getItemOriginalSubtotal(item).toFixed(2) }}
+                </p>
+                <div class="font-bold text-amber-700 text-sm">
                 ${{ (+item.subtotal).toFixed(2) }}
+                </div>
               </div>
             </div>
             
@@ -173,5 +194,116 @@
       </div>
       <span class="text-xl">${{ (+(cartTotal$ | async)!).toFixed(2) }}</span>
     </button>
+  </div>
+</div>
+
+<div *ngIf="showItemDiscountModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+  <div class="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
+    <div class="mb-5 flex items-start justify-between gap-4">
+      <div>
+        <h3 class="text-xl font-bold text-gray-900">Discount Selected Items</h3>
+        <p class="mt-1 text-sm text-gray-500">Choose one or more items from the current order and apply a discount.</p>
+      </div>
+      <button type="button" (click)="closeItemDiscountModal()" class="text-2xl leading-none text-gray-400 transition hover:text-gray-600">
+        ×
+      </button>
+    </div>
+
+    <div class="mb-4 max-h-72 space-y-3 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50 p-3">
+      <button
+        *ngFor="let item of currentCartItems"
+        type="button"
+        (click)="toggleDiscountItem(item.drink.name)"
+        class="flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition"
+        [class.border-amber-500]="isDiscountItemSelected(item.drink.name)"
+        [class.bg-amber-50]="isDiscountItemSelected(item.drink.name)"
+        [class.border-gray-200]="!isDiscountItemSelected(item.drink.name)"
+        [class.bg-white]="!isDiscountItemSelected(item.drink.name)">
+        <div class="flex items-center gap-3">
+          <div class="flex h-5 w-5 items-center justify-center rounded border text-xs font-bold"
+            [class.border-amber-500]="isDiscountItemSelected(item.drink.name)"
+            [class.bg-amber-500]="isDiscountItemSelected(item.drink.name)"
+            [class.text-white]="isDiscountItemSelected(item.drink.name)"
+            [class.border-gray-300]="!isDiscountItemSelected(item.drink.name)">
+            <span *ngIf="isDiscountItemSelected(item.drink.name)">✓</span>
+          </div>
+          <div>
+            <p class="font-semibold text-gray-800">{{ item.drink.name }}</p>
+            <p class="text-sm text-gray-500">Qty {{ item.quantity }} · ${{ getItemOriginalSubtotal(item).toFixed(2) }}</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <p *ngIf="hasItemDiscount(item)" class="text-xs font-semibold text-red-500">{{ getItemDiscountLabel(item) }}</p>
+          <p class="font-bold text-amber-700">${{ (+item.subtotal).toFixed(2) }}</p>
+        </div>
+      </button>
+    </div>
+
+    <div class="mb-4 grid grid-cols-2 gap-3">
+      <button
+        type="button"
+        (click)="setDiscountUnit('percentage')"
+        class="rounded-xl border px-4 py-3 text-sm font-semibold transition"
+        [class.border-amber-500]="discountUnit === 'percentage'"
+        [class.bg-amber-50]="discountUnit === 'percentage'"
+        [class.text-amber-700]="discountUnit === 'percentage'"
+        [class.border-gray-200]="discountUnit !== 'percentage'"
+        [class.text-gray-600]="discountUnit !== 'percentage'">
+        Percentage (%)
+      </button>
+      <button
+        type="button"
+        (click)="setDiscountUnit('fixed')"
+        class="rounded-xl border px-4 py-3 text-sm font-semibold transition"
+        [class.border-amber-500]="discountUnit === 'fixed'"
+        [class.bg-amber-50]="discountUnit === 'fixed'"
+        [class.text-amber-700]="discountUnit === 'fixed'"
+        [class.border-gray-200]="discountUnit !== 'fixed'"
+        [class.text-gray-600]="discountUnit !== 'fixed'">
+        Fixed Amount ($)
+      </button>
+    </div>
+
+    <label for="itemDiscountValue" class="mb-2 block text-sm font-medium text-gray-700">
+      {{ discountUnit === 'percentage' ? 'Discount Percentage' : 'Discount Amount Per Selected Item' }}
+    </label>
+    <div class="mb-4 flex items-center rounded-xl border border-gray-200 px-3 py-3 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-100">
+      <span class="mr-2 text-gray-500">{{ discountUnit === 'percentage' ? '%' : '$' }}</span>
+      <input
+        id="itemDiscountValue"
+        type="number"
+        min="0"
+        [max]="discountUnit === 'percentage' ? 100 : null"
+        step="0.01"
+        [value]="discountValue"
+        (input)="onDiscountValueChange($event)"
+        class="w-full border-0 p-0 text-base text-gray-900 outline-none focus:ring-0"
+        placeholder="Enter value">
+    </div>
+
+    <div *ngIf="discountError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+      {{ discountError }}
+    </div>
+
+    <div class="flex gap-3">
+      <button
+        type="button"
+        (click)="closeItemDiscountModal()"
+        class="flex-1 rounded-xl border border-gray-200 px-4 py-3 font-semibold text-gray-600 transition hover:bg-gray-50">
+        Cancel
+      </button>
+      <button
+        type="button"
+        (click)="clearDiscountFromSelectedItems()"
+        class="flex-1 rounded-xl border border-red-200 px-4 py-3 font-semibold text-red-500 transition hover:bg-red-50">
+        Remove Discount
+      </button>
+      <button
+        type="button"
+        (click)="applyDiscountToSelectedItems()"
+        class="flex-1 rounded-xl bg-amber-500 px-4 py-3 font-semibold text-white transition hover:bg-amber-600">
+        Apply Discount
+      </button>
+    </div>
   </div>
 </div>

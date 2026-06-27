@@ -57,16 +57,17 @@ export class CartService {
             // Item already in cart, increase quantity
             const updatedItems = [...currentItems];
             updatedItems[existingItemIndex].quantity += quantity;
-            updatedItems[existingItemIndex].subtotal =
-                updatedItems[existingItemIndex].quantity * drink.price;
+            updatedItems[existingItemIndex] = this.recalculateCartItem({
+                ...updatedItems[existingItemIndex]
+            });
             this.cartItemsSubject.next(updatedItems);
         } else {
             // New item, add to cart
-            const newItem: CartItem = {
+            const newItem = this.recalculateCartItem({
                 drink,
                 quantity,
                 subtotal: quantity * drink.price
-            };
+            });
             this.cartItemsSubject.next([...currentItems, newItem]);
         }
     }
@@ -83,14 +84,51 @@ export class CartService {
         const currentItems = this.cartItemsSubject.value;
         const updatedItems = currentItems.map(item => {
             if (item.drink.name === drinkName) {
-                return {
+                return this.recalculateCartItem({
                     ...item,
-                    quantity,
-                    subtotal: quantity * item.drink.price
-                };
+                    quantity
+                });
             }
             return item;
         });
+        this.cartItemsSubject.next(updatedItems);
+    }
+
+    applyDiscountToItems(
+        drinkNames: string[],
+        discountType: 'percentage' | 'fixed',
+        discountValue: number
+    ): void {
+        const selectedDrinkNames = new Set(drinkNames);
+        const updatedItems = this.cartItemsSubject.value.map(item => {
+            if (!selectedDrinkNames.has(item.drink.name)) {
+                return item;
+            }
+
+            return this.recalculateCartItem({
+                ...item,
+                discountType,
+                discountValue
+            });
+        });
+
+        this.cartItemsSubject.next(updatedItems);
+    }
+
+    clearDiscountFromItems(drinkNames: string[]): void {
+        const selectedDrinkNames = new Set(drinkNames);
+        const updatedItems = this.cartItemsSubject.value.map(item => {
+            if (!selectedDrinkNames.has(item.drink.name)) {
+                return item;
+            }
+
+            return this.recalculateCartItem({
+                ...item,
+                discountType: null,
+                discountValue: 0
+            });
+        });
+
         this.cartItemsSubject.next(updatedItems);
     }
 
@@ -120,7 +158,8 @@ export class CartService {
 
         try {
             const stored = localStorage.getItem(this.STORAGE_KEY);
-            return stored ? JSON.parse(stored) : [];
+            const parsedItems: CartItem[] = stored ? JSON.parse(stored) : [];
+            return parsedItems.map(item => this.recalculateCartItem(item));
         } catch (error) {
             console.error('Error loading cart from storage:', error);
             return [];
@@ -140,5 +179,31 @@ export class CartService {
         } catch (error) {
             console.error('Error saving cart to storage:', error);
         }
+    }
+
+    private recalculateCartItem(item: CartItem): CartItem {
+        const quantity = Math.max(1, Number(item.quantity || 1));
+        const baseSubtotal = quantity * Number(item.drink.price || 0);
+        const discountType = item.discountType || null;
+        const discountValue = Number(item.discountValue || 0);
+        let discountAmount = 0;
+
+        if (discountType === 'percentage' && discountValue > 0) {
+            discountAmount = baseSubtotal * (Math.min(discountValue, 100) / 100);
+        } else if (discountType === 'fixed' && discountValue > 0) {
+            discountAmount = Math.min(discountValue, baseSubtotal);
+        }
+
+        discountAmount = Math.round(discountAmount * 100) / 100;
+
+        return {
+            ...item,
+            quantity,
+            baseSubtotal,
+            discountType,
+            discountValue,
+            discountAmount,
+            subtotal: Math.round((baseSubtotal - discountAmount) * 100) / 100
+        };
     }
 }

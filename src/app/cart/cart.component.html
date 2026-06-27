@@ -125,6 +125,36 @@
                         <span>Subtotal</span>
                         <span>${{ (+(cartTotal$ | async)!).toFixed(2) }}</span>
                     </div>
+                    <div class="rounded-xl border border-dashed border-amber-200 bg-amber-50/60 p-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-800">Discount</p>
+                                <p class="text-xs text-gray-500" *ngIf="hasDiscount()">
+                                    Applied: {{ getDiscountDisplayValue() }}
+                                </p>
+                                <p class="text-xs text-gray-500" *ngIf="!hasDiscount()">
+                                    Add a whole-order discount before checkout
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                (click)="openDiscountModal()"
+                                class="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-amber-700 shadow-sm ring-1 ring-amber-200 transition hover:bg-amber-100">
+                                {{ hasDiscount() ? 'Edit Discount' : 'Apply Discount' }}
+                            </button>
+                        </div>
+                        <button
+                            *ngIf="hasDiscount()"
+                            type="button"
+                            (click)="clearDiscount()"
+                            class="mt-2 text-sm font-medium text-red-500 transition hover:text-red-600">
+                            Remove Discount
+                        </button>
+                    </div>
+                    <div *ngIf="hasDiscount()" class="flex justify-between text-gray-600">
+                        <span>Discount</span>
+                        <span class="font-semibold text-red-500">- ${{ getAppliedDiscount((cartTotal$ | async)!).toFixed(2) }}</span>
+                    </div>
                     <div class="flex justify-between text-gray-600">
                         <span>Tax (0%)</span>
                         <span>$0.00</span>
@@ -132,7 +162,7 @@
                     <div class="border-t pt-3">
                         <div class="flex justify-between text-lg font-bold text-gray-800">
                             <span>Total</span>
-                            <span class="text-amber-600">${{ (+(cartTotal$ | async)!).toFixed(2) }}</span>
+                            <span class="text-amber-600">${{ getFinalTotal((cartTotal$ | async)!).toFixed(2) }}</span>
                         </div>
                     </div>
                 </div>
@@ -155,6 +185,93 @@
                     Clear Cart
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="showDiscountModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div class="mb-5 flex items-start justify-between gap-4">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900">Apply Discount</h3>
+                <p class="mt-1 text-sm text-gray-500">Apply a whole-order discount and update the total instantly.</p>
+            </div>
+            <button type="button" (click)="closeDiscountModal()" class="text-2xl leading-none text-gray-400 transition hover:text-gray-600">
+                ×
+            </button>
+        </div>
+
+        <div class="mb-4 rounded-xl bg-gray-50 p-4">
+            <p class="text-sm text-gray-500">Discount applies to the full cart</p>
+            <p class="mt-1 text-lg font-bold text-gray-900">Subtotal: ${{ currentCartSubtotal.toFixed(2) }}</p>
+        </div>
+
+        <div class="mb-4 grid grid-cols-2 gap-3">
+            <button
+                type="button"
+                (click)="setDiscountUnit('percent')"
+                class="rounded-xl border px-4 py-3 text-sm font-semibold transition"
+                [class.border-amber-500]="discountUnit === 'percent'"
+                [class.bg-amber-50]="discountUnit === 'percent'"
+                [class.text-amber-700]="discountUnit === 'percent'"
+                [class.border-gray-200]="discountUnit !== 'percent'"
+                [class.text-gray-600]="discountUnit !== 'percent'">
+                Percentage (%)
+            </button>
+            <button
+                type="button"
+                (click)="setDiscountUnit('amount')"
+                class="rounded-xl border px-4 py-3 text-sm font-semibold transition"
+                [class.border-amber-500]="discountUnit === 'amount'"
+                [class.bg-amber-50]="discountUnit === 'amount'"
+                [class.text-amber-700]="discountUnit === 'amount'"
+                [class.border-gray-200]="discountUnit !== 'amount'"
+                [class.text-gray-600]="discountUnit !== 'amount'">
+                Fixed Amount ($)
+            </button>
+        </div>
+
+        <label for="discountValue" class="mb-2 block text-sm font-medium text-gray-700">
+            {{ discountUnit === 'percent' ? 'Discount Percentage' : 'Discount Amount' }}
+        </label>
+        <div class="mb-5 flex items-center rounded-xl border border-gray-200 px-3 py-3 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-100">
+            <span class="mr-2 text-gray-500">{{ discountUnit === 'percent' ? '%' : '$' }}</span>
+            <input
+                id="discountValue"
+                type="number"
+                min="0"
+                [max]="discountUnit === 'percent' ? 100 : null"
+                step="0.01"
+                [value]="discountDraftValue"
+                (input)="onDiscountInput($event)"
+                class="w-full border-0 p-0 text-base text-gray-900 outline-none focus:ring-0"
+                placeholder="Enter value">
+        </div>
+
+        <div class="mb-5 rounded-xl bg-gray-50 p-4">
+            <div class="flex justify-between text-sm text-gray-500">
+                <span>Preview Discount</span>
+                <span class="font-semibold text-red-500">- ${{ getPreviewDiscount(currentCartSubtotal).toFixed(2) }}</span>
+            </div>
+            <div class="mt-2 flex justify-between text-base font-bold text-gray-900">
+                <span>New Total</span>
+                <span class="text-amber-600">${{ getPreviewTotal(currentCartSubtotal).toFixed(2) }}</span>
+            </div>
+        </div>
+
+        <div class="flex gap-3">
+            <button
+                type="button"
+                (click)="closeDiscountModal()"
+                class="flex-1 rounded-xl border border-gray-200 px-4 py-3 font-semibold text-gray-600 transition hover:bg-gray-50">
+                Cancel
+            </button>
+            <button
+                type="button"
+                (click)="applyDiscount(currentCartSubtotal)"
+                class="flex-1 rounded-xl bg-amber-500 px-4 py-3 font-semibold text-white transition hover:bg-amber-600">
+                Apply
+            </button>
         </div>
     </div>
 </div>

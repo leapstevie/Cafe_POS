@@ -24,6 +24,12 @@ export class MenuComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
   categories: string[] = ['All'];
+  currentCartItems: CartItem[] = [];
+  showItemDiscountModal = false;
+  selectedDiscountItemNames: string[] = [];
+  discountUnit: 'percentage' | 'fixed' = 'percentage';
+  discountValue = '';
+  discountError = '';
 
   cartItems$: Observable<CartItem[]>;
   cartTotal$: Observable<number>;
@@ -39,6 +45,12 @@ export class MenuComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadMenuItems();
+    this.cartItems$.subscribe(items => {
+      this.currentCartItems = items;
+      this.selectedDiscountItemNames = this.selectedDiscountItemNames.filter(name =>
+        items.some(item => item.drink.name === name)
+      );
+    });
   }
 
   loadMenuItems(): void {
@@ -80,6 +92,115 @@ export class MenuComponent implements OnInit {
 
   addToCart(drink: Drink) {
     this.cartService.addToCart(drink, 1);
+  }
+
+  openItemDiscountModal(): void {
+    if (this.currentCartItems.length === 0) {
+      return;
+    }
+
+    this.showItemDiscountModal = true;
+    this.discountError = '';
+    this.selectedDiscountItemNames = [];
+    this.discountUnit = 'percentage';
+    this.discountValue = '';
+  }
+
+  closeItemDiscountModal(): void {
+    this.showItemDiscountModal = false;
+    this.discountError = '';
+  }
+
+  toggleDiscountItem(itemName: string): void {
+    if (this.selectedDiscountItemNames.includes(itemName)) {
+      this.selectedDiscountItemNames = this.selectedDiscountItemNames.filter(name => name !== itemName);
+      return;
+    }
+
+    this.selectedDiscountItemNames = [...this.selectedDiscountItemNames, itemName];
+  }
+
+  setDiscountUnit(unit: 'percentage' | 'fixed'): void {
+    this.discountUnit = unit;
+  }
+
+  onDiscountValueChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.discountValue = input.value;
+  }
+
+  applyDiscountToSelectedItems(): void {
+    const parsedValue = Number(this.discountValue || 0);
+    const selectedItems = this.currentCartItems.filter(item =>
+      this.selectedDiscountItemNames.includes(item.drink.name)
+    );
+
+    if (selectedItems.length === 0) {
+      this.discountError = 'Select at least one item.';
+      return;
+    }
+
+    if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+      this.discountError = 'Enter a valid discount value.';
+      return;
+    }
+
+    if (this.discountUnit === 'percentage' && parsedValue > 100) {
+      this.discountError = 'Percentage discount cannot be more than 100%.';
+      return;
+    }
+
+    const highestBaseSubtotal = Math.max(...selectedItems.map(item => item.baseSubtotal || item.subtotal));
+    if (this.discountUnit === 'fixed' && parsedValue > highestBaseSubtotal) {
+      this.discountError = 'Fixed discount cannot be greater than the selected item price.';
+      return;
+    }
+
+    this.cartService.applyDiscountToItems(
+      this.selectedDiscountItemNames,
+      this.discountUnit,
+      this.roundCurrency(parsedValue)
+    );
+
+    this.closeItemDiscountModal();
+  }
+
+  clearDiscountFromSelectedItems(): void {
+    if (this.selectedDiscountItemNames.length === 0) {
+      this.discountError = 'Select at least one item.';
+      return;
+    }
+
+    this.cartService.clearDiscountFromItems(this.selectedDiscountItemNames);
+    this.closeItemDiscountModal();
+  }
+
+  hasItemDiscount(item: CartItem): boolean {
+    return Number(item.discountAmount || 0) > 0;
+  }
+
+  getItemDiscountLabel(item: CartItem): string {
+    if (!this.hasItemDiscount(item)) {
+      return '';
+    }
+
+    if (item.discountType === 'percentage') {
+      return `${item.discountValue}% off`;
+    }
+
+    return `-$${Number(item.discountAmount || 0).toFixed(2)}`;
+  }
+
+  getItemOriginalSubtotal(item: CartItem): number {
+    return Number(item.baseSubtotal || item.subtotal || 0);
+  }
+
+  isDiscountItemSelected(itemName: string): boolean {
+    return this.selectedDiscountItemNames.includes(itemName);
+  }
+
+  private roundCurrency(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 
   increaseQuantity(itemName: string, currentQuantity: number): void {

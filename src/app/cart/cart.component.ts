@@ -22,6 +22,12 @@ export class CartComponent implements OnInit {
     isCheckingOut = false;
     checkoutError = '';
     placedInvoice = '';
+    currentCartSubtotal = 0;
+    showDiscountModal = false;
+    discountUnit: 'percent' | 'amount' = 'percent';
+    discountDraftValue = '';
+    appliedDiscountType: 'percent' | 'amount' | null = null;
+    appliedDiscountValue = 0;
 
     constructor(
         private readonly cartService: CartService,
@@ -34,6 +40,9 @@ export class CartComponent implements OnInit {
         this.cartItems$ = this.cartService.getCartItems();
         this.cartTotal$ = this.cartService.getCartTotal();
         this.cartCount$ = this.cartService.getCartCount();
+        this.cartTotal$.subscribe(total => {
+            this.currentCartSubtotal = total;
+        });
     }
 
     increaseQuantity(drinkName: string, currentQuantity: number) {
@@ -55,7 +64,113 @@ export class CartComponent implements OnInit {
     clearCart() {
         if (confirm('Are you sure you want to clear your entire cart?')) {
             this.cartService.clearCart();
+            this.clearDiscount();
         }
+    }
+
+    openDiscountModal() {
+        this.showDiscountModal = true;
+        this.discountUnit = this.appliedDiscountType || 'percent';
+        this.discountDraftValue = this.appliedDiscountValue > 0 ? String(this.appliedDiscountValue) : '';
+        this.checkoutError = '';
+    }
+
+    closeDiscountModal() {
+        this.showDiscountModal = false;
+    }
+
+    setDiscountUnit(unit: 'percent' | 'amount') {
+        this.discountUnit = unit;
+    }
+
+    onDiscountInput(event: Event) {
+        const input = event.target as HTMLInputElement;
+        this.discountDraftValue = input.value;
+    }
+
+    applyDiscount(subtotal: number) {
+        const rawValue = Number(this.discountDraftValue || 0);
+
+        if (!Number.isFinite(rawValue) || rawValue <= 0) {
+            this.checkoutError = 'Enter a valid discount value.';
+            return;
+        }
+
+        if (this.discountUnit === 'percent' && rawValue > 100) {
+            this.checkoutError = 'Percentage discount cannot be more than 100%.';
+            return;
+        }
+
+        if (this.discountUnit === 'amount' && rawValue > subtotal) {
+            this.checkoutError = 'Discount cannot be more than subtotal.';
+            return;
+        }
+
+        this.appliedDiscountType = this.discountUnit;
+        this.appliedDiscountValue = this.roundCurrency(rawValue);
+        this.checkoutError = '';
+        this.closeDiscountModal();
+    }
+
+    clearDiscount() {
+        this.appliedDiscountType = null;
+        this.appliedDiscountValue = 0;
+        this.discountDraftValue = '';
+        this.discountUnit = 'percent';
+    }
+
+    hasDiscount(): boolean {
+        return this.appliedDiscountType !== null && this.appliedDiscountValue > 0;
+    }
+
+    getPreviewDiscount(subtotal: number): number {
+        const rawValue = Number(this.discountDraftValue || 0);
+
+        if (!Number.isFinite(rawValue) || rawValue <= 0) {
+            return 0;
+        }
+
+        if (this.discountUnit === 'percent') {
+            return this.roundCurrency(subtotal * (Math.min(rawValue, 100) / 100));
+        }
+
+        return this.roundCurrency(Math.min(rawValue, subtotal));
+    }
+
+    getPreviewTotal(subtotal: number): number {
+        return this.roundCurrency(Math.max(subtotal - this.getPreviewDiscount(subtotal), 0));
+    }
+
+    getAppliedDiscount(subtotal: number): number {
+        if (!this.hasDiscount()) {
+            return 0;
+        }
+
+        if (this.appliedDiscountType === 'percent') {
+            return this.roundCurrency(subtotal * (this.appliedDiscountValue / 100));
+        }
+
+        return this.roundCurrency(Math.min(this.appliedDiscountValue, subtotal));
+    }
+
+    getDiscountDisplayValue(): string {
+        if (!this.hasDiscount()) {
+            return '';
+        }
+
+        if (this.appliedDiscountType === 'percent') {
+            return `${this.appliedDiscountValue}%`;
+        }
+
+        return `$${this.appliedDiscountValue.toFixed(2)}`;
+    }
+
+    getFinalTotal(subtotal: number): number {
+        return this.roundCurrency(Math.max(subtotal - this.getAppliedDiscount(subtotal), 0));
+    }
+
+    private roundCurrency(value: number): number {
+        return Math.round(value * 100) / 100;
     }
 
     checkout() {
@@ -63,11 +178,19 @@ export class CartComponent implements OnInit {
         this.checkoutError = '';
 
         this.cartItems$.pipe(take(1)).subscribe(items => {
-            this.cartTotal$.pipe(take(1)).subscribe(total => {
+            this.cartTotal$.pipe(take(1)).subscribe(subtotal => {
+                const discountAmount = this.getAppliedDiscount(subtotal);
+                const total = this.getFinalTotal(subtotal);
                 const cashierName = this.authService.currentUserValue?.username || 'Guest';
                 const payload = {
+                    subtotal: +subtotal.toFixed(2),
                     total: +total.toFixed(2),
                     cashier_name: cashierName,
+                    discount_type: this.hasDiscount()
+                        ? (this.appliedDiscountType === 'percent' ? 'percentage' as const : 'fixed' as const)
+                        : null,
+                    discount_value: this.hasDiscount() ? +this.appliedDiscountValue.toFixed(2) : 0,
+                    discount_amount: +discountAmount.toFixed(2),
                     items: items.map(i => ({
                         item_id: i.drink.id ?? null,
                         item_name: i.drink.name,
@@ -81,6 +204,7 @@ export class CartComponent implements OnInit {
                         this.placedInvoice = res.order.invoice_number;
                         this.orderPlaced = true;
                         this.isCheckingOut = false;
+                        this.clearDiscount();
                         this.cartService.clearCart();
                     },
                     error: (err) => {

@@ -12,5 +12,9 @@ export interface Drink {
 export interface CartItem {
     drink: Drink;
     quantity: number;
+    baseSubtotal?: number;
     subtotal: number;
+    discountType?: 'percentage' | 'fixed' | null;
+    discountValue?: number;
+    discountAmount?: number;
 }
