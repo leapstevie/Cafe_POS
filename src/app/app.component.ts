@@ -52,7 +52,7 @@ export class AppComponent implements OnInit {
   }
 
   openMobileMenu(): void {
-    this.telegramMiniAppService.selectionChanged();
+    this.telegramMiniAppService.impact('medium');
     this.bottomSheet.open(MobileMenuComponent);
   }
 }

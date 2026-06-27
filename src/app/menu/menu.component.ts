@@ -94,7 +94,7 @@ export class MenuComponent implements OnInit {
 
   addToCart(drink: Drink) {
     this.cartService.addToCart(drink, 1);
-    this.telegramMiniAppService.impact('light');
+    this.telegramMiniAppService.impact('rigid');
   }
 
   openItemDiscountModal(): void {
@@ -234,7 +234,7 @@ export class MenuComponent implements OnInit {
   }
 
   checkout(): void {
-    this.telegramMiniAppService.impact('medium');
+    this.telegramMiniAppService.impact('heavy');
     this.router.navigate(['/cart']);
   }
 }

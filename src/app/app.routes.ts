@@ -9,7 +9,7 @@ import { OrderHistoryComponent } from './components/order-history/order-history.
 import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: '', component: MenuComponent },
   { path: 'menu', component: MenuComponent },
   { path: 'cart', component: CartComponent },
   { path: 'login', component: LoginComponent },

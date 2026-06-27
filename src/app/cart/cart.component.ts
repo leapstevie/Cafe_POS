@@ -25,6 +25,11 @@ export class CartComponent implements OnInit {
     placedInvoice = '';
     currentCartSubtotal = 0;
     showDiscountModal = false;
+    showConfirmModal = false;
+    confirmTitle = '';
+    confirmMessage = '';
+    confirmAction: 'remove-item' | 'clear-cart' | null = null;
+    pendingDrinkName = '';
     discountUnit: 'percent' | 'amount' = 'percent';
     discountDraftValue = '';
     appliedDiscountType: 'percent' | 'amount' | null = null;
@@ -49,29 +54,55 @@ export class CartComponent implements OnInit {
 
     increaseQuantity(drinkName: string, currentQuantity: number) {
         this.cartService.updateQuantity(drinkName, currentQuantity + 1);
-        this.telegramMiniAppService.selectionChanged();
+        this.telegramMiniAppService.impact('soft');
     }
 
     decreaseQuantity(drinkName: string, currentQuantity: number) {
         if (currentQuantity > 1) {
             this.cartService.updateQuantity(drinkName, currentQuantity - 1);
-            this.telegramMiniAppService.selectionChanged();
+            this.telegramMiniAppService.impact('soft');
         }
     }
 
     removeItem(drinkName: string) {
-        if (confirm(`Remove ${drinkName} from cart?`)) {
-            this.cartService.removeFromCart(drinkName);
-            this.telegramMiniAppService.notify('warning');
-        }
+        this.pendingDrinkName = drinkName;
+        this.confirmAction = 'remove-item';
+        this.confirmTitle = 'Remove Item';
+        this.confirmMessage = `Remove ${drinkName} from your cart?`;
+        this.showConfirmModal = true;
+        this.telegramMiniAppService.selectionChanged();
     }
 
     clearCart() {
-        if (confirm('Are you sure you want to clear your entire cart?')) {
+        this.pendingDrinkName = '';
+        this.confirmAction = 'clear-cart';
+        this.confirmTitle = 'Clear Cart';
+        this.confirmMessage = 'Are you sure you want to clear your entire cart?';
+        this.showConfirmModal = true;
+        this.telegramMiniAppService.selectionChanged();
+    }
+
+    closeConfirmModal() {
+        this.showConfirmModal = false;
+        this.confirmAction = null;
+        this.confirmTitle = '';
+        this.confirmMessage = '';
+        this.pendingDrinkName = '';
+    }
+
+    confirmCartAction() {
+        if (this.confirmAction === 'remove-item' && this.pendingDrinkName) {
+            this.cartService.removeFromCart(this.pendingDrinkName);
+            this.telegramMiniAppService.notify('warning');
+        }
+
+        if (this.confirmAction === 'clear-cart') {
             this.cartService.clearCart();
             this.clearDiscount(true);
             this.telegramMiniAppService.notify('warning');
         }
+
+        this.closeConfirmModal();
     }
 
     openDiscountModal() {
@@ -188,7 +219,7 @@ export class CartComponent implements OnInit {
     checkout() {
         this.isCheckingOut = true;
         this.checkoutError = '';
-        this.telegramMiniAppService.impact('medium');
+        this.telegramMiniAppService.impact('heavy');
 
         this.cartItems$.pipe(take(1)).subscribe(items => {
             this.cartTotal$.pipe(take(1)).subscribe(subtotal => {

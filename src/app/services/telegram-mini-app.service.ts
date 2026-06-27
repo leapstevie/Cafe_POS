@@ -93,9 +93,12 @@ export class TelegramMiniAppService {
         if (hapticFeedback.selectionChanged.isAvailable()) {
             hapticFeedback.selectionChanged();
         }
+        if (hapticFeedback.impactOccurred.isAvailable()) {
+            hapticFeedback.impactOccurred('soft');
+        }
     }
 
-    impact(style: ImpactStyle = 'light'): void {
+    impact(style: ImpactStyle = 'medium'): void {
         if (hapticFeedback.impactOccurred.isAvailable()) {
             hapticFeedback.impactOccurred(style);
         }
