@@ -3,11 +3,28 @@
         <!-- Logo/Header -->
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-amber-900 mb-2">Cafe បង</h1>
-            <p class="text-gray-600">Sign in to your account</p>
+            <p class="text-gray-600" *ngIf="!isTelegramContext">Sign in to your account</p>
+        </div>
+
+        <!-- Telegram Mini App: no password form, just auto-login or a gate to the web app -->
+        <div *ngIf="isTelegramContext" class="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div *ngIf="isCheckingTelegramAuth">
+                <p class="text-gray-600">Checking your Telegram account...</p>
+            </div>
+            <div *ngIf="!isCheckingTelegramAuth && telegramAuthFailed">
+                <p class="text-gray-800 font-semibold mb-2">Please continue on the web app</p>
+                <p class="text-gray-500 text-sm mb-6">
+                    This Telegram Mini App is only available to the cafe admin. Everyone else should sign in on the website.
+                </p>
+                <button (click)="openOnWeb()"
+                    class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
+                    Open Web App
+                </button>
+            </div>
         </div>
 
         <!-- Login Form -->
-        <div class="bg-white rounded-lg shadow-lg p-8">
+        <div class="bg-white rounded-lg shadow-lg p-8" *ngIf="!isTelegramContext">
             <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
                 <p class="text-sm font-semibold text-amber-900">Tester Accounts</p>
                 <div class="mt-3 grid gap-2">

@@ -1,0 +1,103 @@
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <h1 class="text-2xl md:text-3xl font-bold text-amber-900">Analysis Report</h1>
+        <a routerLink="/admin"
+            class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-2 px-4 rounded-lg transition text-sm">
+            Back to Admin
+        </a>
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {{ errorMessage }}
+    </div>
+
+    <!-- Date range filter -->
+    <div class="flex items-center gap-2 mb-6">
+        <span class="text-sm font-medium text-gray-600 mr-1">Range:</span>
+        <button *ngFor="let days of rangeOptions" (click)="selectRange(days)"
+            [class.bg-amber-500]="selectedRange === days" [class.text-white]="selectedRange === days"
+            [class.bg-white]="selectedRange !== days" [class.text-gray-700]="selectedRange !== days"
+            class="px-3 py-1.5 rounded-lg text-sm font-semibold border border-amber-200 hover:bg-amber-100 transition"
+            [class.hover:bg-amber-600]="selectedRange === days">
+            Last {{ days }} days
+        </button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading && !dashboard" class="text-center py-12 text-gray-500">Loading analysis report...</div>
+
+    <ng-container *ngIf="dashboard as data">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-xs text-gray-500 mb-1">Total Revenue</p>
+                <p class="text-xl font-bold text-green-600">${{ data.summary.totalRevenue.toFixed(2) }}</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-xs text-gray-500 mb-1">Total Orders</p>
+                <p class="text-xl font-bold text-amber-600">{{ data.summary.totalOrders }}</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-xs text-gray-500 mb-1">Items Sold</p>
+                <p class="text-xl font-bold text-amber-600">{{ data.summary.totalItemsSold }}</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-xs text-gray-500 mb-1">Avg Order Value</p>
+                <p class="text-xl font-bold text-green-600">${{ data.summary.averageOrderValue.toFixed(2) }}</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-xs text-gray-500 mb-1">Today's Revenue</p>
+                <p class="text-xl font-bold text-green-600">${{ data.summary.todayRevenue.toFixed(2) }}</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-xs text-gray-500 mb-1">Today's Orders</p>
+                <p class="text-xl font-bold text-amber-600">{{ data.summary.todayOrders }}</p>
+            </div>
+        </div>
+
+        <!-- Revenue Trend -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Revenue Trend</h2>
+            <div *ngIf="data.salesTrend.length === 0" class="text-center py-12 text-gray-500">No sales data for this range.</div>
+            <div *ngIf="data.salesTrend.length > 0" echarts [options]="revenueTrendOption" [loading]="isLoading" class="chart-box"></div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Orders Trend -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Orders Trend</h2>
+                <div *ngIf="data.salesTrend.length === 0" class="text-center py-12 text-gray-500">No order data for this range.</div>
+                <div *ngIf="data.salesTrend.length > 0" echarts [options]="ordersTrendOption" [loading]="isLoading" class="chart-box"></div>
+            </div>
+
+            <!-- Top Selling Items -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Top Selling Items</h2>
+                <div *ngIf="data.topItems.length === 0" class="text-center py-12 text-gray-500">No item sales yet.</div>
+                <div *ngIf="data.topItems.length > 0" echarts [options]="topItemsOption" [loading]="isLoading" class="chart-box"></div>
+            </div>
+
+            <!-- Sales by Category -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Sales by Category</h2>
+                <div *ngIf="data.categorySales.length === 0" class="text-center py-12 text-gray-500">No category sales yet.</div>
+                <div *ngIf="data.categorySales.length > 0" echarts [options]="categorySalesOption" [loading]="isLoading" class="chart-box"></div>
+            </div>
+
+            <!-- Cashier Performance -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Cashier Performance</h2>
+                <div *ngIf="data.cashierPerformance.length === 0" class="text-center py-12 text-gray-500">No cashier data yet.</div>
+                <div *ngIf="data.cashierPerformance.length > 0" echarts [options]="cashierPerformanceOption" [loading]="isLoading" class="chart-box"></div>
+            </div>
+
+            <!-- Payment Methods (only if the schema tracks payment method) -->
+            <div class="bg-white rounded-lg shadow p-6" *ngIf="data.paymentMethods.length > 0">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Payment Methods</h2>
+                <div echarts [options]="paymentMethodsOption" [loading]="isLoading" class="chart-box"></div>
+            </div>
+        </div>
+    </ng-container>
+</div>

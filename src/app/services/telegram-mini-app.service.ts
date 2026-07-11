@@ -12,6 +12,11 @@ import {
 type ImpactStyle = 'light' | 'medium' | 'heavy' | 'rigid' | 'soft';
 type NotificationType = 'error' | 'success' | 'warning';
 
+interface TelegramWebApp {
+    initData?: string;
+    openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
+}
+
 @Injectable({
     providedIn: 'root'
 })
@@ -19,6 +24,7 @@ export class TelegramMiniAppService {
     private readonly isBrowser: boolean;
     private initialized = false;
     private inTelegramMiniApp = false;
+    private rawInitData: string | undefined;
 
     constructor(@Inject(PLATFORM_ID) platformId: object) {
         this.isBrowser = isPlatformBrowser(platformId);
@@ -29,13 +35,14 @@ export class TelegramMiniAppService {
             return;
         }
 
-        const telegram = (window as Window & {
-            Telegram?: {
-                WebApp?: unknown;
-            };
-        }).Telegram;
+        const telegram = this.getTelegramGlobal();
 
-        this.inTelegramMiniApp = Boolean(telegram?.WebApp);
+        // telegram-web-app.js is loaded for every visitor (web and Telegram alike) and always
+        // defines window.Telegram.WebApp as an object, even outside Telegram — with every field
+        // undefined. Real launch data (non-empty initData) is what actually distinguishes a
+        // genuine Telegram Mini App session from a plain web visit.
+        this.rawInitData = telegram?.WebApp?.initData || undefined;
+        this.inTelegramMiniApp = Boolean(this.rawInitData);
 
         if (!this.inTelegramMiniApp) {
             return;
@@ -87,6 +94,28 @@ export class TelegramMiniAppService {
 
     getTelegramUsername(): string | undefined {
         return initData.user()?.username;
+    }
+
+    /** Raw, signed initData string — sent to the backend to verify identity server-side. */
+    getRawInitData(): string | undefined {
+        return this.rawInitData;
+    }
+
+    /** Opens a URL in the system browser instead of Telegram's embedded webview. */
+    openExternalLink(url: string): void {
+        if (!this.isBrowser) {
+            return;
+        }
+        const webApp = this.getTelegramGlobal()?.WebApp;
+        if (webApp?.openLink) {
+            webApp.openLink(url, { try_instant_view: false });
+        } else {
+            window.open(url, '_blank');
+        }
+    }
+
+    private getTelegramGlobal(): { WebApp?: TelegramWebApp } | undefined {
+        return (window as Window & { Telegram?: { WebApp?: TelegramWebApp } }).Telegram;
     }
 
     selectionChanged(): void {

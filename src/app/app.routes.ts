@@ -6,6 +6,7 @@ import { RegisterComponent } from './components/register/register.component';
 import { AdminControlComponent } from './components/admin-control/admin-control.component';
 import { CategoryManagementComponent } from './components/category-management/category-management.component';
 import { OrderHistoryComponent } from './components/order-history/order-history.component';
+import { AnalysisReportComponent } from './components/analysis-report/analysis-report.component';
 import { adminGuard } from './guards/admin.guard';
 import { authGuard } from './guards/auth.guard';
 
@@ -18,5 +19,6 @@ export const routes: Routes = [
   { path: 'admin', component: AdminControlComponent, canActivate: [adminGuard] },
   { path: 'admin/categories', component: CategoryManagementComponent, canActivate: [adminGuard] },
   { path: 'admin/orders', component: OrderHistoryComponent, canActivate: [adminGuard] },
+  { path: 'admin/reports', component: AnalysisReportComponent, canActivate: [adminGuard] },
   { path: '**', redirectTo: '' }
 ];

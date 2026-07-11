@@ -48,6 +48,17 @@ export class AuthService {
     }
 
     /**
+     * Auto-login the recognized Telegram admin using verified Telegram Mini App initData
+     */
+    telegramLogin(initData: string): Observable<AuthResponse> {
+        return this.http.post<AuthResponse>(`${this.API_URL}/auth/telegram-login`, { initData })
+            .pipe(
+                tap(response => this.handleAuthSuccess(response)),
+                catchError(this.handleError)
+            );
+    }
+
+    /**
      * Logout user
      */
     logout(): void {
